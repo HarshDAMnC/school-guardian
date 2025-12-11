@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Save, Loader2, CalendarDays, MessageCircle } from 'lucide-react';
+import { Save, Loader2, CalendarDays, MessageCircle, Send } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Student {
@@ -20,9 +20,10 @@ interface Student {
   class: string;
 }
 
-interface AttendanceRecord {
+interface ParentContact {
   roll_no: number;
-  status: 'P' | 'A';
+  contact: string;
+  parent_name: string;
 }
 
 interface WhatsAppStatus {
@@ -35,6 +36,7 @@ export default function Attendance() {
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Map<number, 'P' | 'A'>>(new Map());
   const [existingAttendance, setExistingAttendance] = useState<Set<number>>(new Set());
+  const [parentContacts, setParentContacts] = useState<Map<number, ParentContact>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState<Map<number, WhatsAppStatus>>(new Map());
@@ -80,6 +82,18 @@ export default function Attendance() {
 
       setAttendance(attendanceMap);
       setExistingAttendance(existingSet);
+
+      // Fetch parent contacts
+      const { data: parentsData } = await supabase
+        .from('parents_detail')
+        .select('roll_no, contact, parent_name');
+
+      const contactsMap = new Map<number, ParentContact>();
+      parentsData?.forEach((p) => {
+        contactsMap.set(p.roll_no, p);
+      });
+      setParentContacts(contactsMap);
+
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to fetch data', variant: 'destructive' });
     } finally {
@@ -93,7 +107,18 @@ export default function Attendance() {
     setAttendance(newAttendance);
   };
 
-  const sendWhatsAppNotification = async (student: Student, parentContact: string) => {
+  const sendWhatsAppNotification = async (student: Student) => {
+    const parentContact = parentContacts.get(student.roll_no);
+    
+    if (!parentContact?.contact) {
+      toast({ 
+        title: 'No Contact Found', 
+        description: `No parent contact found for ${student.name}. Please add parent details first.`,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     try {
       setWhatsappStatus(prev => {
         const newMap = new Map(prev);
@@ -105,7 +130,7 @@ export default function Attendance() {
         body: {
           studentName: student.name,
           rollNo: student.roll_no,
-          contact: parentContact,
+          contact: parentContact.contact,
         },
       });
 
@@ -116,19 +141,31 @@ export default function Attendance() {
         newMap.set(student.roll_no, { 
           roll_no: student.roll_no, 
           status: 'sent',
-          message: 'WhatsApp notification sent' 
+          message: 'Notification sent' 
         });
         return newMap;
       });
+
+      toast({ 
+        title: 'Message Sent', 
+        description: `WhatsApp notification sent to ${parentContact.parent_name}` 
+      });
+
     } catch (error: any) {
       setWhatsappStatus(prev => {
         const newMap = new Map(prev);
         newMap.set(student.roll_no, { 
           roll_no: student.roll_no, 
           status: 'failed',
-          message: error.message || 'Failed to send notification' 
+          message: error.message || 'Failed to send' 
         });
         return newMap;
+      });
+
+      toast({ 
+        title: 'Failed to Send', 
+        description: error.message || 'Could not send WhatsApp notification',
+        variant: 'destructive' 
       });
     }
   };
@@ -136,17 +173,12 @@ export default function Attendance() {
   const saveAttendance = async () => {
     setSaving(true);
     try {
-      const newRecords: AttendanceRecord[] = [];
-      const absentStudents: Student[] = [];
+      const newRecords: { roll_no: number; status: 'P' | 'A' }[] = [];
 
       for (const [rollNo, status] of attendance.entries()) {
         // Only save if not already saved today
         if (!existingAttendance.has(rollNo)) {
           newRecords.push({ roll_no: rollNo, status });
-          if (status === 'A') {
-            const student = students.find(s => s.roll_no === rollNo);
-            if (student) absentStudents.push(student);
-          }
         }
       }
 
@@ -171,32 +203,6 @@ export default function Attendance() {
         description: `Attendance saved for ${newRecords.length} students. Yearly stats updated automatically.` 
       });
 
-      // Send WhatsApp notifications for absent students
-      if (absentStudents.length > 0) {
-        for (const student of absentStudents) {
-          // Get parent contact
-          const { data: parentData } = await supabase
-            .from('parents_detail')
-            .select('contact')
-            .eq('roll_no', student.roll_no)
-            .maybeSingle();
-
-          if (parentData?.contact) {
-            sendWhatsAppNotification(student, parentData.contact);
-          } else {
-            setWhatsappStatus(prev => {
-              const newMap = new Map(prev);
-              newMap.set(student.roll_no, { 
-                roll_no: student.roll_no, 
-                status: 'failed',
-                message: 'No parent contact found' 
-              });
-              return newMap;
-            });
-          }
-        }
-      }
-
       // Refresh to show saved state
       fetchData();
     } catch (error: any) {
@@ -211,7 +217,7 @@ export default function Attendance() {
     if (!wsStatus) return null;
 
     return (
-      <span className={`ml-2 inline-flex items-center gap-1 text-xs ${
+      <span className={`inline-flex items-center gap-1 text-xs ${
         wsStatus.status === 'sending' ? 'text-warning' :
         wsStatus.status === 'sent' ? 'text-success' : 'text-destructive'
       }`}>
@@ -221,6 +227,8 @@ export default function Attendance() {
       </span>
     );
   };
+
+  const isAbsent = (rollNo: number) => attendance.get(rollNo) === 'A';
 
   return (
     <DashboardLayout>
@@ -242,7 +250,7 @@ export default function Attendance() {
         <CardHeader>
           <CardTitle className="text-lg">Mark Attendance</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Select Present (P) or Absent (A) for each student. Absent students will receive WhatsApp notifications.
+            Select Present (P) or Absent (A) for each student. Use the Send button to notify parents of absent students.
           </p>
         </CardHeader>
         <CardContent>
@@ -264,7 +272,7 @@ export default function Attendance() {
                     <th>Name</th>
                     <th>Class</th>
                     <th>Status</th>
-                    <th>Notification</th>
+                    <th>WhatsApp Notification</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -305,7 +313,27 @@ export default function Attendance() {
                         )}
                       </td>
                       <td>
-                        {attendance.get(student.roll_no) === 'A' && getStatusBadge(student.roll_no)}
+                        {isAbsent(student.roll_no) ? (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant={whatsappStatus.get(student.roll_no)?.status === 'sent' ? 'outline' : 'default'}
+                              onClick={() => sendWhatsAppNotification(student)}
+                              disabled={whatsappStatus.get(student.roll_no)?.status === 'sending'}
+                              className="gap-1.5"
+                            >
+                              {whatsappStatus.get(student.roll_no)?.status === 'sending' ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Send className="h-3.5 w-3.5" />
+                              )}
+                              {whatsappStatus.get(student.roll_no)?.status === 'sent' ? 'Resend' : 'Send'}
+                            </Button>
+                            {getStatusBadge(student.roll_no)}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
