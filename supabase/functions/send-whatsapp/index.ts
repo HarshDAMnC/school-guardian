@@ -92,15 +92,16 @@ serve(async (req) => {
       }
     }
 
-    // If no API configured, log the message
+    // If no API configured, log the message and return NOT_CONFIGURED status
     if (!apiResponse) {
       console.log(`WhatsApp notification would be sent to ${contact}:`);
       console.log(`Message: ${message}`);
       
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          message: 'WhatsApp API not configured. Message logged.',
+          success: false, 
+          notConfigured: true,
+          message: 'WhatsApp API not configured. Message logged only.',
           details: {
             to: contact,
             content: message,

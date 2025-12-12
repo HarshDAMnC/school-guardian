@@ -28,7 +28,7 @@ interface ParentContact {
 
 interface WhatsAppStatus {
   roll_no: number;
-  status: 'sending' | 'sent' | 'failed';
+  status: 'sending' | 'sent' | 'failed' | 'logged';
   message?: string;
 }
 
@@ -136,20 +136,39 @@ export default function Attendance() {
 
       if (error) throw error;
 
-      setWhatsappStatus(prev => {
-        const newMap = new Map(prev);
-        newMap.set(student.roll_no, { 
-          roll_no: student.roll_no, 
-          status: 'sent',
-          message: 'Notification sent' 
+      // Check if API was actually configured or just logged
+      if (data?.notConfigured) {
+        setWhatsappStatus(prev => {
+          const newMap = new Map(prev);
+          newMap.set(student.roll_no, { 
+            roll_no: student.roll_no, 
+            status: 'logged',
+            message: 'API not configured - message logged only' 
+          });
+          return newMap;
         });
-        return newMap;
-      });
 
-      toast({ 
-        title: 'Message Sent', 
-        description: `WhatsApp notification sent to ${parentContact.parent_name}` 
-      });
+        toast({ 
+          title: 'Message Logged', 
+          description: `WhatsApp API not configured. Configure GREEN_API or ULTRAMSG secrets to send real messages.`,
+          variant: 'destructive'
+        });
+      } else {
+        setWhatsappStatus(prev => {
+          const newMap = new Map(prev);
+          newMap.set(student.roll_no, { 
+            roll_no: student.roll_no, 
+            status: 'sent',
+            message: 'Notification sent' 
+          });
+          return newMap;
+        });
+
+        toast({ 
+          title: 'Message Sent', 
+          description: `WhatsApp notification sent to ${parentContact.parent_name}` 
+        });
+      }
 
     } catch (error: any) {
       setWhatsappStatus(prev => {
@@ -219,11 +238,13 @@ export default function Attendance() {
     return (
       <span className={`inline-flex items-center gap-1 text-xs ${
         wsStatus.status === 'sending' ? 'text-warning' :
-        wsStatus.status === 'sent' ? 'text-success' : 'text-destructive'
+        wsStatus.status === 'sent' ? 'text-success' : 
+        wsStatus.status === 'logged' ? 'text-warning' : 'text-destructive'
       }`}>
         <MessageCircle className="h-3 w-3" />
         {wsStatus.status === 'sending' ? 'Sending...' :
-         wsStatus.status === 'sent' ? 'Sent' : 'Failed'}
+         wsStatus.status === 'sent' ? 'Sent' : 
+         wsStatus.status === 'logged' ? 'Logged Only' : 'Failed'}
       </span>
     );
   };

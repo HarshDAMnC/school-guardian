@@ -39,7 +39,7 @@ export default function Students() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [formData, setFormData] = useState({ name: '', class: '' });
+  const [formData, setFormData] = useState({ roll_no: '', name: '', class: '' });
 
   useEffect(() => {
     fetchStudents();
@@ -64,6 +64,11 @@ export default function Students() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!selectedStudent && (!formData.roll_no.trim() || isNaN(Number(formData.roll_no)))) {
+      toast({ title: 'Validation Error', description: 'Please enter a valid roll number', variant: 'destructive' });
+      return;
+    }
+
     if (!formData.name.trim() || !formData.class.trim()) {
       toast({ title: 'Validation Error', description: 'Please fill all fields', variant: 'destructive' });
       return;
@@ -81,7 +86,11 @@ export default function Students() {
       } else {
         const { error } = await supabase
           .from('students')
-          .insert({ name: formData.name.trim(), class: formData.class.trim() });
+          .insert({ 
+            roll_no: Number(formData.roll_no), 
+            name: formData.name.trim(), 
+            class: formData.class.trim() 
+          });
 
         if (error) throw error;
         toast({ title: 'Success', description: 'Student added successfully' });
@@ -89,7 +98,7 @@ export default function Students() {
 
       setIsDialogOpen(false);
       setSelectedStudent(null);
-      setFormData({ name: '', class: '' });
+      setFormData({ roll_no: '', name: '', class: '' });
       fetchStudents();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -117,13 +126,13 @@ export default function Students() {
 
   const openEdit = (student: Student) => {
     setSelectedStudent(student);
-    setFormData({ name: student.name, class: student.class });
+    setFormData({ roll_no: String(student.roll_no), name: student.name, class: student.class });
     setIsDialogOpen(true);
   };
 
   const openAdd = () => {
     setSelectedStudent(null);
-    setFormData({ name: '', class: '' });
+    setFormData({ roll_no: '', name: '', class: '' });
     setIsDialogOpen(true);
   };
 
@@ -234,6 +243,18 @@ export default function Students() {
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
+              {!selectedStudent && (
+                <div className="space-y-2">
+                  <Label htmlFor="roll_no">Roll Number</Label>
+                  <Input
+                    id="roll_no"
+                    type="number"
+                    placeholder="Enter roll number"
+                    value={formData.roll_no}
+                    onChange={(e) => setFormData({ ...formData, roll_no: e.target.value })}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
