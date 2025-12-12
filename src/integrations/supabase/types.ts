@@ -110,7 +110,7 @@ export type Database = {
           class: string
           created_at?: string | null
           name: string
-          roll_no?: number
+          roll_no: number
         }
         Update: {
           class?: string
