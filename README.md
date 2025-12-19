@@ -56,5 +56,3 @@ The system uses a **Fingerprint Sensor + ESP32** to identify students and mark a
 
 ---
 
-## 📂 Project Structure
-
