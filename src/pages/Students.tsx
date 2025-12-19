@@ -89,7 +89,9 @@ export default function Students() {
           .insert({ 
             roll_no: Number(formData.roll_no), 
             name: formData.name.trim(), 
-            class: formData.class.trim() 
+            class: formData.class.trim(),
+            is_enrolled: false,
+            identifier_code: Number(formData.roll_no)
           });
 
         if (error) throw error;
