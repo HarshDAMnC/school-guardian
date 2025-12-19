@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# Attendance Management System (Fingerprint-Based)
 
-## Project info
+A real-world Attendance Management System built for **Shree Swastika High School, Haliisa**, designed to automate student attendance using **fingerprint-based identification** integrated with a web application and backend server.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This project was developed as a **practical deployment-focused system**, keeping real school constraints and hardware testing in mind.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🏫 Problem Statement
 
-**Use Lovable**
+Traditional attendance systems in schools are:
+- Time-consuming
+- Error-prone
+- Easy to manipulate
+- Hard to digitize reliably
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+The goal was to build a **simple, reliable, and scalable attendance system** using:
+- Unique student identifiers (Fingerprint ID)
+- Centralized backend
+- Real-time attendance marking
+- Minimal manual intervention
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🚀 Solution Overview
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The system uses a **Fingerprint Sensor + ESP32** to identify students and mark attendance automatically by communicating with a backend server.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Workflow:
+1. Student scans fingerprint on the hardware device
+2. ESP32 extracts the fingerprint ID
+3. ESP32 sends the ID to the backend via HTTP
+4. Backend verifies the student and marks attendance
+5. Hardware receives success/failure response instantly
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🛠 Tech Stack
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Backend
+- **Django**
+- **Django REST Framework**
+- SQLite / PostgreSQL
+- REST APIs
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Frontend
+- **React**
+- Simple dashboard for managing students
+- API-based data handling
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Hardware
+- **ESP32**
+- Fingerprint Sensor
+- Arduino Framework
+- Wi-Fi based HTTP communication
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📂 Project Structure
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
