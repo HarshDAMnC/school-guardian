@@ -103,18 +103,24 @@ export type Database = {
         Row: {
           class: string
           created_at: string | null
+          identifier_code: number | null
+          is_enrolled: boolean
           name: string
           roll_no: number
         }
         Insert: {
           class: string
           created_at?: string | null
+          identifier_code?: number | null
+          is_enrolled?: boolean
           name: string
           roll_no: number
         }
         Update: {
           class?: string
           created_at?: string | null
+          identifier_code?: number | null
+          is_enrolled?: boolean
           name?: string
           roll_no?: number
         }

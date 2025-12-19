@@ -1,1 +1,10 @@
 project_id = "ujlvynudhtcvcvrqfohy"
+
+[functions.send-whatsapp]
+verify_jwt = false
+
+[functions.biometric-check]
+verify_jwt = false
+
+[functions.biometric-confirm]
+verify_jwt = false
